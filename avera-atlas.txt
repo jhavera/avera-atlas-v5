@@ -1,0 +1,29 @@
+avera-atlas/
+├── swir-detector/          # [CLion Project] C++ Debris Detection Service
+│   ├── CMakeLists.txt
+│   ├── main.cpp
+│   ├── DebrisDetector.cpp
+│   ├── DebrisDetector.hpp
+│   ├── debris_model.onnx   # <--- Ensure this model file is present
+│   └── Dockerfile.cpp
+│
+├── planner-stack/          # [PyCharm Project] Trajectory & Risk Engine
+│   ├── ingest/             # Service A: Data Ingest
+│   │   ├── tracks_provider.py
+│   │   └── requirements.txt
+│   ├── propagate/          # Service B: Orbit Propagator
+│   │   ├── sgp4_wrapper.py
+│   │   └── requirements.txt
+│   ├── Dockerfile.ingest
+│   └── Dockerfile.propagator
+│
+├── ui/                     # [PyCharm Project] Operator Dashboard
+│   ├── templates/
+│   │   └── index.html
+│   ├── main.py
+│   ├── requirements.txt
+│   └── Dockerfile.ui
+│
+└── k8s/                    # Kubernetes/K3s Manifests
+    ├── planner-pod.yaml    # Deploys Ingest + Propagator (Shared Volume)
+    └── detector-pod.yaml   # Deploys C++ Detector

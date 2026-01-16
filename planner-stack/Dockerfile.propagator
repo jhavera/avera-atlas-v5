@@ -1,0 +1,16 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# COPY from the subdirectory 'propagate/'
+COPY propagate/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# COPY source code
+COPY propagate/pc_utils.py /app/pc_utils.py
+COPY propagate/propagator_kepler.py /app/main.py
+
+# Create data directory
+RUN mkdir -p /data/planner_artifacts
+
+CMD ["python", "-u", "main.py"]

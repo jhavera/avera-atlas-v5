@@ -1,0 +1,91 @@
+version: '3.8'
+services:
+  # --- 1. THE EYES (Python Detector) ---
+  detector:
+    build:
+      context: ./swir-detector
+      dockerfile: Dockerfile
+    image: avera/detector:v1
+    ports:
+      - "8000:8000"
+    environment:
+      - PLANNER_HOST=tracker
+      - PLANNER_PORT=8000
+    depends_on:
+      - tracker
+  # --- 2. THE BRAIN (Ingest Service) ---
+  ingest:
+    build:
+      context: ./planner-stack
+      dockerfile: Dockerfile.ingest
+    image: avera/ingest:v1
+    environment:
+      - OUTPUT_DIR=/data/planner_artifacts
+    volumes:
+      - ./planner-stack/data:/data/planner_artifacts
+  # --- 3. THE BRAIN (Tracker Service) ---
+  tracker:
+    build:
+      context: ./tracker-service
+      dockerfile: Dockerfile
+    image: avera/tracker:v1
+    environment:
+      - DATA_DIR=/data/planner_artifacts
+    volumes:
+      - ./planner-stack/data:/data/planner_artifacts
+    depends_on:
+      - ingest
+  # --- 4. THE BRAIN (Propagator Service) ---
+  propagator:
+    build:
+      context: ./planner-stack
+      dockerfile: Dockerfile.propagator
+    image: avera/propagator:v1
+    environment:
+      - DATA_DIR=/data/planner_artifacts
+    volumes:
+      - ./planner-stack/data:/data/planner_artifacts
+    depends_on:
+      - tracker
+  # --- 5. THE INTERFACE (UI) ---
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile.ui
+    image: avera/ui:v1
+    ports:
+      - "8080:8000"
+    environment:
+      - SWIR_SERVICE_URL=http://detector:8000/predict
+      - TRACKER_SERVICE_URL=http://tracker:8000
+      - DATA_DIR=/data/planner_artifacts
+    depends_on:
+      - detector
+      - tracker
+    volumes:
+      - ./planner-stack/data:/data/planner_artifacts
+  # --- 6. THE STORYTELLER (Visualization) ---
+  viz:
+    build:
+      context: ./planner-stack
+      dockerfile: Dockerfile.viz
+    image: avera/viz:v1
+    environment:
+      - DATA_DIR=/data/planner_artifacts
+    volumes:
+      - ./planner-stack/data:/data/planner_artifacts
+    depends_on:
+      - propagator
+  # --- 7. THE PRESENTER (Demo Service) ---
+  demo:
+    build:
+      context: ./demo
+      dockerfile: Dockerfile
+    image: avera/demo:v1
+    ports:
+      - "8090:80"
+    depends_on:
+      - propagator
+      - viz
+volumes:
+  planner_data:

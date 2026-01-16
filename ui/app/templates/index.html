@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVERA-ATLAS | Conjunction Assessment System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a12;
+            --bg-secondary: #12131a;
+            --bg-card: #1a1b26;
+            --accent-cyan: #66fcf1;
+            --accent-teal: #45a29e;
+            --alert-red: #ff4757;
+            --alert-amber: #ffa502;
+            --alert-green: #2ed573;
+            --text-primary: #e8e8e8;
+            --text-secondary: #8b8b9a;
+            --border-color: #2a2b3d;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            border-bottom: 1px solid var(--accent-teal);
+            padding: 12px 20px;
+        }
+
+        .header h1 {
+            color: var(--accent-cyan);
+            font-size: 1.5rem;
+            margin: 0;
+            letter-spacing: 3px;
+        }
+
+        .header .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+        }
+
+        /* Cards */
+        .panel {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: linear-gradient(90deg, var(--bg-secondary) 0%, transparent 100%);
+            border-bottom: 1px solid var(--border-color);
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-title {
+            color: var(--accent-cyan);
+            font-size: 0.85rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .panel-body {
+            padding: 12px;
+        }
+
+        /* Status Indicators */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .status-red {
+            background: rgba(255, 71, 87, 0.2);
+            color: var(--alert-red);
+            border: 1px solid var(--alert-red);
+        }
+
+        .status-amber {
+            background: rgba(255, 165, 2, 0.2);
+            color: var(--alert-amber);
+            border: 1px solid var(--alert-amber);
+        }
+
+        .status-green {
+            background: rgba(46, 213, 115, 0.2);
+            color: var(--alert-green);
+            border: 1px solid var(--alert-green);
+        }
+
+        .status-nominal {
+            background: rgba(102, 252, 241, 0.1);
+            color: var(--accent-cyan);
+            border: 1px solid var(--accent-teal);
+        }
+
+        /* Decision Badge */
+        .decision-go {
+            background: linear-gradient(135deg, #2ed573 0%, #1e8449 100%);
+            color: white;
+            animation: pulse-green 2s infinite;
+        }
+
+        .decision-nogo {
+            background: linear-gradient(135deg, #636e72 0%, #2d3436 100%);
+            color: #ddd;
+        }
+
+        .decision-standby {
+            background: linear-gradient(135deg, #ffa502 0%, #e67e22 100%);
+            color: white;
+            animation: pulse-amber 2s infinite;
+        }
+
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 5px rgba(46, 213, 115, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(46, 213, 115, 0.8); }
+        }
+
+        @keyframes pulse-amber {
+            0%, 100% { box-shadow: 0 0 5px rgba(255, 165, 2, 0.5); }
+            50% { box-shadow: 0 0 15px rgba(255, 165, 2, 0.8); }
+        }
+
+        /* Canvas */
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            background: #000;
+            border: 1px solid var(--accent-teal);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        canvas {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Buttons */
+        .btn-atlas {
+            background: transparent;
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            font-weight: bold;
+            letter-spacing: 1px;
+            padding: 8px 16px;
+            transition: all 0.2s;
+        }
+
+        .btn-atlas:hover {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+
+        .btn-atlas-warning {
+            border-color: var(--alert-amber);
+            color: var(--alert-amber);
+        }
+
+        .btn-atlas-warning:hover {
+            background: var(--alert-amber);
+            color: var(--bg-primary);
+        }
+
+        /* Tables */
+        .data-table {
+            width: 100%;
+            font-size: 0.75rem;
+        }
+
+        .data-table th {
+            color: var(--accent-teal);
+            font-weight: normal;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 6px 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table td {
+            padding: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table tr:hover {
+            background: rgba(102, 252, 241, 0.05);
+        }
+
+        /* Metrics Display */
+        .metric-box {
+            text-align: center;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-secondary);
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-cyan);
+        }
+
+        .metric-label {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric-value.red { color: var(--alert-red); }
+        .metric-value.amber { color: var(--alert-amber); }
+        .metric-value.green { color: var(--alert-green); }
+
+        /* Recommendation Card */
+        .recommendation-card {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-card) 100%);
+            border: 2px solid var(--accent-teal);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .recommendation-card.alert-active {
+            border-color: var(--alert-amber);
+            animation: border-pulse 2s infinite;
+        }
+
+        @keyframes border-pulse {
+            0%, 100% { border-color: var(--alert-amber); }
+            50% { border-color: var(--alert-red); }
+        }
+
+        /* Thruster Cards */
+        .thruster-option {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+
+        .thruster-option.recommended {
+            border-color: var(--accent-cyan);
+            background: rgba(102, 252, 241, 0.05);
+        }
+
+        .thruster-name {
+            color: var(--accent-cyan);
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        .thruster-specs {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        /* Loading */
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--text-secondary);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* File Input */
+        .file-input {
+            background: var(--bg-secondary);
+            border: 1px dashed var(--border-color);
+            color: var(--text-primary);
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .file-input:hover {
+            border-color: var(--accent-cyan);
+        }
+
+        /* Video Player */
+        video {
+            width: 100%;
+            background: #000;
+            border-radius: 4px;
+        }
+
+        /* Tabs */
+        .tab-container {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 12px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px 15px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background: rgba(102, 252, 241, 0.05);
+        }
+
+        .tab-btn.active {
+            color: var(--accent-cyan);
+            border-bottom-color: var(--accent-cyan);
+            background: rgba(102, 252, 241, 0.1);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .summary-image {
+            width: 100%;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .summary-image:hover {
+            transform: scale(1.02);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-teal);
+            border-radius: 3px;
+        }
+
+        /* Alert Banner */
+        .alert-banner {
+            background: linear-gradient(90deg, rgba(255, 71, 87, 0.3) 0%, transparent 100%);
+            border-left: 4px solid var(--alert-red);
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .alert-banner.active {
+            display: block;
+            animation: flash 1s infinite;
+        }
+
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Pipeline Flow */
+        .pipeline-flow {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 12px;
+        }
+
+        .pipeline-node {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 4px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .pipeline-node.active {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 10px rgba(102, 252, 241, 0.5);
+            animation: node-pulse 1s infinite;
+        }
+
+        @keyframes node-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .pipeline-arrow {
+            color: var(--accent-teal);
+            font-size: 1.2rem;
+        }
+
+        /* Demo button states */
+        .btn-demo-running {
+            background: var(--alert-amber) !important;
+            border-color: var(--alert-amber) !important;
+            color: var(--bg-primary) !important;
+            animation: pulse-amber 2s infinite;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1>AVERA-ATLAS</h1>
+            <div class="subtitle">ADVANCED TRACKING AND LOCATION ANALYSIS SYSTEM | CONJUNCTION ASSESSMENT</div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <span class="status-badge status-nominal" id="systemStatus">SYSTEM ONLINE</span>
+            <span class="text-secondary" id="timestamp">--:--:-- UTC</span>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Banner -->
+<div class="alert-banner" id="alertBanner">
+    <strong>⚠️ CONJUNCTION ALERT</strong> - <span id="alertMessage">Maneuver recommendation active</span>
+</div>
+
+<div class="container-fluid py-3">
+    <div class="row">
+        <!-- LEFT COLUMN: Controls & Detection -->
+        <div class="col-lg-4">
+            <!-- Data Ingest Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h5 class="panel-title">📡 SWIR Data Ingest</h5>
+                    <span class="status-badge status-nominal" id="detectorStatus">READY</span>
+                </div>
+                <div class="panel-body">
+                    <input class="form-control file-input mb-3" type="file" id="fileInput" accept="image/*">
+                    <button class="btn btn-atlas w-100 mb-2" onclick="processImage()">
+                        <span id="scanBtnText">INITIATE SCAN</span>
+                        <span id="scanSpinner" class="loading-spinner ms-2" style="display:none;"></span>
+                    </button>
+                    <div class="text-center text-secondary small mb-2">— or —</div>
+                    <button class="btn btn-atlas-warning w-100" onclick="toggleDemoMode()" id="demoBtn">
+                        ▶ START DEMO MODE
+                    </button>
+                    <small class="text-secondary d-block text-center mt-1" id="demoStatus">Auto-generates synthetic detections</small>
+                </div>
+            </div>
+
+            <!-- Summary Metrics -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h5 class="panel-title">📊 Tracking Summary</h5>
+                </div>
+                <div class="panel-body">
+                    <div class="row g-2">
+                        <div class="col-4">
+                            <div class="metric-box">
+                                <div class="metric-value" id="metricTotal">0</div>
+                                <div class="metric-label">Tracked</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="metric-box">
+                                <div class="metric-value red" id="metricRed">0</div>
+                                <div class="metric-label">Red Alert</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="metric-box">
+                                <div class="metric-value amber" id="metricAmber">0</div>
+                                <div class="metric-label">AMBER</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-2 mt-2">
+                        <div class="col-6">
+                            <div class="metric-box">
+                                <div class="metric-value" id="metricClosest">--</div>
+                                <div class="metric-label">Closest (km)</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="metric-box">
+                                <div class="metric-value" id="metricMaxPc">--</div>
+                                <div class="metric-label">Max Pc</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trajectory Visualization -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h5 class="panel-title">📊 Trajectory Analysis</h5>
+                </div>
+                <div class="panel-body">
+                    <!-- Tab Buttons -->
+                    <div class="tab-container">
+                        <button class="tab-btn active" onclick="switchTab('animation')" id="tabAnimation">
+                            🎬 Animation
+                        </button>
+                        <button class="tab-btn" onclick="switchTab('summary')" id="tabSummary">
+                            📈 Summary
+                        </button>
+                    </div>
+                    
+                    <!-- Animation Tab Content -->
+                    <div id="contentAnimation" class="tab-content active">
+                        <video id="plannerVideo" controls>
+                            <source src="/api/video" type="video/mp4">
+                            Visualization pending...
+                        </video>
+                        <button class="btn btn-atlas-warning w-100 mt-2" onclick="reloadVideo()">
+                            LOAD TRAJECTORY
+                        </button>
+                        <small class="text-secondary d-block text-center mt-1">*Wait 10s after scan for render</small>
+                    </div>
+                    
+                    <!-- Summary Tab Content -->
+                    <div id="contentSummary" class="tab-content">
+                        <img id="summaryImage" class="summary-image" src="/api/summary" alt="Conjunction Summary" 
+                             onclick="openSummaryFullscreen()" onerror="this.style.display='none'; document.getElementById('summaryPlaceholder').style.display='block';">
+                        <div id="summaryPlaceholder" class="text-center py-4" style="display: none;">
+                            <div class="text-secondary">Summary chart not available yet</div>
+                            <small class="text-secondary">Run a scan to generate</small>
+                        </div>
+                        <button class="btn btn-atlas w-100 mt-2" onclick="reloadSummary()">
+                            REFRESH SUMMARY
+                        </button>
+                        <small class="text-secondary d-block text-center mt-1">Click image to view fullscreen</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENTER COLUMN: Optical Feed & Detection Results -->
+        <div class="col-lg-4">
+            <!-- Optical Feed -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h5 class="panel-title">📷 Optical Feed</h5>
+                    <span id="detectionCount" class="status-badge status-nominal">0 DETECTIONS</span>
+                </div>
+                <div class="panel-body">
+                    <div class="canvas-container">
+                        <canvas id="outputCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conjunction Table -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h5 class="panel-title">🎯 Active Conjunctions</h5>
+                    <button class="btn btn-atlas btn-sm" onclick="refreshConjunctions()">↻ REFRESH</button>
+                </div>
+                <div class="panel-body" style="max-height: 300px; overflow-y: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Object</th>
+                                <th>Miss (m)</th>
+                                <th>Pc</th>
+                                <th>TCA</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="conjunctionTable">
+                            <tr>
+                                <td colspan="5" class="text-center text-secondary">No data - run a scan</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tracker Status Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h5 class="panel-title">🛰️ Tracker Pipeline</h5>
+                    <span class="status-badge status-nominal" id="trackerStatus">OFFLINE</span>
+                </div>
+                <div class="panel-body">
+                    <!-- Pipeline Metrics -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <div class="metric-box">
+                                <div class="metric-value" id="trackerDetections">0</div>
+                                <div class="metric-label">Detections</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="metric-box">
+                                <div class="metric-value amber" id="trackerUCTs">0</div>
+                                <div class="metric-label">UCTs</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="metric-box">
+                                <div class="metric-value green" id="trackerTracks">0</div>
+                                <div class="metric-label">Tracks</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Pipeline Flow Visualization -->
+                    <div class="pipeline-flow mb-3">
+                        <div class="d-flex justify-content-between align-items-center small">
+                            <div class="text-center">
+                                <div class="pipeline-node" id="pipelineDetect">📷</div>
+                                <div class="text-secondary" style="font-size: 0.6rem;">DETECT</div>
+                            </div>
+                            <div class="pipeline-arrow">→</div>
+                            <div class="text-center">
+                                <div class="pipeline-node" id="pipelineTransform">🔄</div>
+                                <div class="text-secondary" style="font-size: 0.6rem;">TRANSFORM</div>
+                            </div>
+                            <div class="pipeline-arrow">→</div>
+                            <div class="text-center">
+                                <div class="pipeline-node" id="pipelineCorrelate">🔗</div>
+                                <div class="text-secondary" style="font-size: 0.6rem;">CORRELATE</div>
+                            </div>
+                            <div class="pipeline-arrow">→</div>
+                            <div class="text-center">
+                                <div class="pipeline-node" id="pipelineIOD">🎯</div>
+                                <div class="text-secondary" style="font-size: 0.6rem;">IOD</div>
+                            </div>
+                            <div class="pipeline-arrow">→</div>
+                            <div class="text-center">
+                                <div class="pipeline-node" id="pipelineTrack">📍</div>
+                                <div class="text-secondary" style="font-size: 0.6rem;">TRACK</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Active Tracks Table -->
+                    <div class="text-secondary small mb-2">CONFIRMED TRACKS</div>
+                    <div style="max-height: 150px; overflow-y: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Track ID</th>
+                                    <th>Class</th>
+                                    <th>SMA (km)</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trackerTracksTable">
+                                <tr>
+                                    <td colspan="4" class="text-center text-secondary">No tracks yet</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Decision & Recommendations -->
+        <div class="col-lg-4">
+            <!-- Primary Recommendation -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h5 class="panel-title">⚡ Maneuver Decision</h5>
+                </div>
+                <div class="panel-body">
+                    <div class="recommendation-card" id="recommendationCard">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <div class="text-secondary small">DECISION STATUS</div>
+                                <div class="fs-4 fw-bold" id="decisionStatus">MONITORING</div>
+                            </div>
+                            <div class="status-badge decision-nogo fs-6 px-3 py-2" id="decisionBadge">
+                                NO ACTION
+                            </div>
+                        </div>
+                        <div id="recommendationDetails">
+                            <div class="text-secondary small mb-2">No active maneuver recommendations</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Propulsion Options -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h5 class="panel-title">🚀 Propulsion Recommendation</h5>
+                </div>
+                <div class="panel-body" id="propulsionPanel">
+                    <div class="mb-3">
+                        <div class="text-secondary small mb-1">RECOMMENDED OPTION</div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="status-badge status-nominal" id="optionBadge">--</span>
+                            <span id="optionName" class="text-secondary">Awaiting conjunction data</span>
+                        </div>
+                    </div>
+                    <div id="thrusterList">
+                        <!-- Populated dynamically -->
+                    </div>
+                    <div class="mt-3 p-2 bg-dark rounded" id="deltaVEstimate" style="display:none;">
+                        <div class="text-secondary small">ESTIMATED ΔV REQUIRED</div>
+                        <div class="fs-5 fw-bold" style="color: var(--accent-cyan);">
+                            <span id="deltaVValue">--</span> m/s
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Decision Matrix Reference -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h5 class="panel-title">📋 GO/NO GO Matrix</h5>
+                </div>
+                <div class="panel-body">
+                    <table class="data-table" style="font-size: 0.65rem;">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Pc=0.01</th>
+                                <th>Pc=0.05</th>
+                                <th>Pc=0.10</th>
+                                <th>Pc=0.25</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1 min</td>
+                                <td class="text-secondary">NO GO</td>
+                                <td class="text-secondary">NO GO</td>
+                                <td style="color: var(--alert-green);">GO</td>
+                                <td style="color: var(--alert-green);">GO</td>
+                            </tr>
+                            <tr>
+                                <td>5 min</td>
+                                <td class="text-secondary">NO GO</td>
+                                <td class="text-secondary">NO GO</td>
+                                <td style="color: var(--alert-amber);">STBY</td>
+                                <td style="color: var(--alert-green);">GO</td>
+                            </tr>
+                            <tr>
+                                <td>30 min</td>
+                                <td class="text-secondary">NO GO</td>
+                                <td style="color: var(--alert-amber);">STBY</td>
+                                <td style="color: var(--alert-amber);">STBY</td>
+                                <td style="color: var(--alert-green);">GO</td>
+                            </tr>
+                            <tr>
+                                <td>1 hr</td>
+                                <td class="text-secondary">NO GO</td>
+                                <td class="text-secondary">NO GO</td>
+                                <td style="color: var(--alert-amber);">STBY</td>
+                                <td style="color: var(--alert-amber);">STBY</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="mt-2 small">
+                        <div><span style="color: var(--alert-green);">■</span> GO = Execute maneuver</div>
+                        <div><span style="color: var(--alert-amber);">■</span> STBY = Prepare thrusters</div>
+                        <div><span class="text-secondary">■</span> NO GO = Continue tracking</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // DOM Elements
+    const fileInput = document.getElementById('fileInput');
+    const canvas = document.getElementById('outputCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // State
+    let lastConjunctionData = null;
+    let refreshInterval = null;
+    let demoRunning = false;
+    let demoInterval = null;
+    let trackerInterval = null;
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        updateTimestamp();
+        setInterval(updateTimestamp, 1000);
+        refreshConjunctions();
+        refreshTrackerStatus();
+        // Auto-refresh conjunction status every 10 seconds
+        refreshInterval = setInterval(refreshConjunctions, 10000);
+        // Auto-refresh tracker status every 5 seconds
+        trackerInterval = setInterval(refreshTrackerStatus, 5000);
+    });
+
+    // ===========================================
+    // Demo Mode Functions
+    // ===========================================
+    
+    async function toggleDemoMode() {
+        const btn = document.getElementById('demoBtn');
+        const status = document.getElementById('demoStatus');
+        
+        if (demoRunning) {
+            // Stop demo
+            await fetch('/api/demo/stop', {method: 'POST'});
+            demoRunning = false;
+            btn.textContent = '▶ START DEMO MODE';
+            btn.classList.remove('btn-demo-running');
+            status.textContent = 'Auto-generates synthetic detections';
+            if (demoInterval) {
+                clearInterval(demoInterval);
+                demoInterval = null;
+            }
+        } else {
+            // Start demo
+            btn.textContent = '⏹ STOP DEMO';
+            btn.classList.add('btn-demo-running');
+            status.textContent = 'Generating detections...';
+            demoRunning = true;
+            
+            // Initial generation
+            await runDemoIteration();
+            
+            // Continue generating every 15 seconds
+            demoInterval = setInterval(runDemoIteration, 15000);
+        }
+    }
+    
+    async function runDemoIteration() {
+        if (!demoRunning) return;
+        
+        const status = document.getElementById('demoStatus');
+        status.textContent = 'Generating detections...';
+        
+        // Animate pipeline nodes
+        animatePipeline();
+        
+        try {
+            const response = await fetch('/api/demo/start', {method: 'POST'});
+            const data = await response.json();
+            
+            if (data.status === 'started' || data.status === 'already_running') {
+                status.textContent = `Generated ${data.generated_detections || 0} detections`;
+                
+                // Refresh data displays
+                setTimeout(() => {
+                    refreshTrackerStatus();
+                    refreshConjunctions();
+                }, 2000);
+                
+                // Reload video after propagator runs
+                setTimeout(() => {
+                    reloadVideo();
+                    status.textContent = 'Demo running - next update in 15s';
+                }, 10000);
+            } else {
+                status.textContent = data.message || 'Demo error';
+            }
+        } catch (e) {
+            status.textContent = 'Connection error';
+            console.error('Demo error:', e);
+        }
+    }
+    
+    function animatePipeline() {
+        const nodes = ['pipelineDetect', 'pipelineTransform', 'pipelineCorrelate', 'pipelineIOD', 'pipelineTrack'];
+        
+        nodes.forEach((id, i) => {
+            const node = document.getElementById(id);
+            setTimeout(() => {
+                node.classList.add('active');
+                setTimeout(() => node.classList.remove('active'), 800);
+            }, i * 400);
+        });
+    }
+
+    // ===========================================
+    // Tracker Status Functions
+    // ===========================================
+    
+    async function refreshTrackerStatus() {
+        try {
+            const response = await fetch('/api/tracker-status');
+            const data = await response.json();
+            
+            const statusBadge = document.getElementById('trackerStatus');
+            
+            if (data.status === 'online') {
+                statusBadge.textContent = 'ONLINE';
+                statusBadge.className = 'status-badge status-green';
+                
+                // Update metrics
+                document.getElementById('trackerDetections').textContent = data.service?.detections_processed || 0;
+                document.getElementById('trackerUCTs').textContent = data.pipeline?.uncorrelated_detections || 0;
+                document.getElementById('trackerTracks').textContent = data.pipeline?.active_tracks || 0;
+                
+                // Update tracks table
+                updateTrackerTracksTable(data.tracks || []);
+            } else {
+                statusBadge.textContent = 'OFFLINE';
+                statusBadge.className = 'status-badge status-red';
+            }
+        } catch (e) {
+            document.getElementById('trackerStatus').textContent = 'ERROR';
+            document.getElementById('trackerStatus').className = 'status-badge status-red';
+        }
+    }
+    
+    function updateTrackerTracksTable(tracks) {
+        const tbody = document.getElementById('trackerTracksTable');
+        
+        if (!tracks || tracks.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-secondary">No tracks yet</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = tracks.map(track => {
+            const statusClass = track.status === 'CONFIRMED' ? 'status-green' : 'status-amber';
+            const sma = track.r_eci_km ? Math.sqrt(
+                track.r_eci_km[0]**2 + track.r_eci_km[1]**2 + track.r_eci_km[2]**2
+            ).toFixed(0) : '--';
+            
+            return `
+                <tr>
+                    <td>${track.object_id || track.track_id?.substr(0, 8) || '--'}</td>
+                    <td>${track.object_class || 'Unknown'}</td>
+                    <td>${sma}</td>
+                    <td><span class="status-badge ${statusClass}" style="font-size: 0.6rem;">${track.status}</span></td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function updateTimestamp() {
+        const now = new Date();
+        document.getElementById('timestamp').textContent = now.toISOString().substr(11, 8) + ' UTC';
+    }
+
+    async function processImage() {
+        const formData = new FormData();
+        if (fileInput.files.length > 0) {
+            formData.append('file', fileInput.files[0]);
+        } else {
+            alert("No source selected.");
+            return;
+        }
+
+        // Update UI state
+        document.getElementById('scanBtnText').textContent = 'PROCESSING...';
+        document.getElementById('scanSpinner').style.display = 'inline-block';
+        document.getElementById('detectorStatus').textContent = 'PROCESSING';
+        document.getElementById('detectorStatus').className = 'status-badge status-amber';
+
+        try {
+            const response = await fetch('/api/process', {method: 'POST', body: formData});
+            const data = await response.json();
+
+            if (data.error) {
+                showError(data.error);
+                return;
+            }
+
+            // Draw detections
+            drawImageWithBoxes(data);
+            
+            // Update detection count
+            const count = data.detections?.length || 0;
+            document.getElementById('detectionCount').textContent = `${count} DETECTION${count !== 1 ? 'S' : ''}`;
+
+            // Success state
+            document.getElementById('detectorStatus').textContent = 'COMPLETE';
+            document.getElementById('detectorStatus').className = 'status-badge status-green';
+
+            // Schedule conjunction refresh (propagation takes ~5s)
+            setTimeout(refreshConjunctions, 5000);
+            setTimeout(reloadVideo, 8000);
+            setTimeout(reloadSummary, 8000);
+
+        } catch (error) {
+            console.error(error);
+            showError("Connection failed");
+        } finally {
+            document.getElementById('scanBtnText').textContent = 'INITIATE SCAN';
+            document.getElementById('scanSpinner').style.display = 'none';
+            setTimeout(() => {
+                document.getElementById('detectorStatus').textContent = 'READY';
+                document.getElementById('detectorStatus').className = 'status-badge status-nominal';
+            }, 3000);
+        }
+    }
+
+    function showError(message) {
+        document.getElementById('detectorStatus').textContent = 'ERROR';
+        document.getElementById('detectorStatus').className = 'status-badge status-red';
+        alert(`Error: ${message}`);
+    }
+
+    async function refreshConjunctions() {
+        try {
+            const response = await fetch('/api/conjunction-status');
+            const data = await response.json();
+            
+            if (data.status === 'no_data') {
+                return;
+            }
+
+            lastConjunctionData = data;
+            updateSummaryMetrics(data.summary);
+            updateConjunctionTable(data.conjunctions);
+            updateRecommendation(data.primary_recommendation, data.conjunctions);
+
+        } catch (error) {
+            console.error('Failed to refresh conjunctions:', error);
+        }
+    }
+
+    function updateSummaryMetrics(summary) {
+        document.getElementById('metricTotal').textContent = summary.total_tracked || 0;
+        document.getElementById('metricRed').textContent = summary.red_alerts || 0;
+        document.getElementById('metricAmber').textContent = summary.amber_alerts || 0;
+        
+        if (summary.closest_approach_km !== null) {
+            document.getElementById('metricClosest').textContent = summary.closest_approach_km.toFixed(2);
+        }
+        
+        if (summary.highest_pc > 0) {
+            document.getElementById('metricMaxPc').textContent = summary.highest_pc.toExponential(1);
+        }
+    }
+
+    function updateConjunctionTable(conjunctions) {
+        const tbody = document.getElementById('conjunctionTable');
+        
+        if (!conjunctions || conjunctions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary">No active conjunctions</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = conjunctions.map(c => {
+            const statusClass = {
+                'RED': 'status-red',
+                'AMBER': 'status-amber',
+                'GREEN': 'status-green',
+                'NOMINAL': 'status-nominal'
+            }[c.risk_level] || 'status-nominal';
+
+            return `
+                <tr>
+                    <td>${c.object_id}</td>
+                    <td>${c.miss_distance_m.toFixed(0)}</td>
+                    <td>${c.pc_display}</td>
+                    <td>${c.time_to_tca_display}</td>
+                    <td><span class="status-badge ${statusClass}">${c.risk_level}</span></td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function updateRecommendation(primary, conjunctions) {
+        const card = document.getElementById('recommendationCard');
+        const badge = document.getElementById('decisionBadge');
+        const status = document.getElementById('decisionStatus');
+        const details = document.getElementById('recommendationDetails');
+        const alertBanner = document.getElementById('alertBanner');
+
+        if (!primary) {
+            badge.className = 'status-badge decision-nogo fs-6 px-3 py-2';
+            badge.textContent = 'NO ACTION';
+            status.textContent = 'MONITORING';
+            details.innerHTML = '<div class="text-secondary small">No active maneuver recommendations</div>';
+            card.classList.remove('alert-active');
+            alertBanner.classList.remove('active');
+            updatePropulsionPanel(null);
+            return;
+        }
+
+        // Update decision badge
+        if (primary.decision === 'GO') {
+            badge.className = 'status-badge decision-go fs-6 px-3 py-2';
+            badge.textContent = '🟢 GO';
+            status.textContent = 'EXECUTE MANEUVER';
+            card.classList.add('alert-active');
+            alertBanner.classList.add('active');
+            document.getElementById('alertMessage').textContent = 
+                `${primary.object} - ${primary.action} in ${primary.time_remaining}`;
+        } else if (primary.decision === 'STANDBY') {
+            badge.className = 'status-badge decision-standby fs-6 px-3 py-2';
+            badge.textContent = '🟡 STANDBY';
+            status.textContent = 'PREPARE SYSTEMS';
+            card.classList.add('alert-active');
+            alertBanner.classList.remove('active');
+        } else {
+            badge.className = 'status-badge decision-nogo fs-6 px-3 py-2';
+            badge.textContent = 'NO ACTION';
+            status.textContent = 'MONITORING';
+            card.classList.remove('alert-active');
+            alertBanner.classList.remove('active');
+        }
+
+        // Update details
+        details.innerHTML = `
+            <div class="row g-2">
+                <div class="col-6">
+                    <div class="text-secondary small">Target Object</div>
+                    <div class="fw-bold">${primary.object}</div>
+                </div>
+                <div class="col-6">
+                    <div class="text-secondary small">Time to TCA</div>
+                    <div class="fw-bold">${primary.time_remaining}</div>
+                </div>
+            </div>
+            <div class="mt-2 p-2 bg-dark rounded">
+                <div class="text-secondary small">ACTION</div>
+                <div>${primary.action}</div>
+            </div>
+        `;
+
+        // Update propulsion panel
+        const conj = conjunctions?.find(c => c.object_id === primary.object);
+        updatePropulsionPanel(conj);
+    }
+
+    function updatePropulsionPanel(conjunction) {
+        const optionBadge = document.getElementById('optionBadge');
+        const optionName = document.getElementById('optionName');
+        const thrusterList = document.getElementById('thrusterList');
+        const deltaVEstimate = document.getElementById('deltaVEstimate');
+
+        if (!conjunction || !conjunction.propulsion) {
+            optionBadge.textContent = '--';
+            optionName.textContent = 'Awaiting conjunction data';
+            thrusterList.innerHTML = '';
+            deltaVEstimate.style.display = 'none';
+            return;
+        }
+
+        const prop = conjunction.propulsion;
+        optionBadge.textContent = `OPTION ${prop.option}`;
+        optionName.textContent = prop.option_name || prop.rationale;
+
+        if (prop.thrusters && prop.thrusters.length > 0) {
+            thrusterList.innerHTML = prop.thrusters.map((t, i) => `
+                <div class="thruster-option ${i === 0 ? 'recommended' : ''}">
+                    <div class="thruster-name">${t.name}</div>
+                    <div class="thruster-specs">
+                        Thrust: ${t.thrust} | Isp: ${t.isp} | Response: ${t.response}
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            thrusterList.innerHTML = '<div class="text-secondary small">No thrusters needed</div>';
+        }
+
+        if (conjunction.delta_v_estimate_m_s) {
+            document.getElementById('deltaVValue').textContent = conjunction.delta_v_estimate_m_s;
+            deltaVEstimate.style.display = 'block';
+        } else {
+            deltaVEstimate.style.display = 'none';
+        }
+    }
+
+    function reloadVideo() {
+        const v = document.getElementById('plannerVideo');
+        v.src = "/api/video?t=" + new Date().getTime();
+        v.load();
+        v.play().catch(e => console.log("Auto-play prevented"));
+    }
+
+    function switchTab(tabName) {
+        // Update tab buttons
+        document.getElementById('tabAnimation').classList.remove('active');
+        document.getElementById('tabSummary').classList.remove('active');
+        
+        // Update tab content
+        document.getElementById('contentAnimation').classList.remove('active');
+        document.getElementById('contentSummary').classList.remove('active');
+        
+        if (tabName === 'animation') {
+            document.getElementById('tabAnimation').classList.add('active');
+            document.getElementById('contentAnimation').classList.add('active');
+        } else {
+            document.getElementById('tabSummary').classList.add('active');
+            document.getElementById('contentSummary').classList.add('active');
+            // Reload summary when switching to it
+            reloadSummary();
+        }
+    }
+
+    function reloadSummary() {
+        const img = document.getElementById('summaryImage');
+        const placeholder = document.getElementById('summaryPlaceholder');
+        
+        img.style.display = 'block';
+        placeholder.style.display = 'none';
+        img.src = "/api/summary?t=" + new Date().getTime();
+        
+        img.onerror = () => {
+            img.style.display = 'none';
+            placeholder.style.display = 'block';
+        };
+    }
+
+    function openSummaryFullscreen() {
+        const img = document.getElementById('summaryImage');
+        
+        // Create fullscreen overlay
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            cursor: pointer;
+        `;
+        
+        const fullImg = document.createElement('img');
+        fullImg.src = img.src;
+        fullImg.style.cssText = `
+            max-width: 95vw;
+            max-height: 95vh;
+            border-radius: 8px;
+            box-shadow: 0 0 50px rgba(102, 252, 241, 0.3);
+        `;
+        
+        const closeHint = document.createElement('div');
+        closeHint.textContent = 'Click anywhere to close';
+        closeHint.style.cssText = `
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #66fcf1;
+            font-size: 14px;
+            letter-spacing: 2px;
+        `;
+        
+        overlay.appendChild(fullImg);
+        overlay.appendChild(closeHint);
+        document.body.appendChild(overlay);
+        
+        overlay.onclick = () => {
+            document.body.removeChild(overlay);
+        };
+        
+        // Also close on Escape key
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                document.body.removeChild(overlay);
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+    }
+
+    function drawImageWithBoxes(apiData) {
+        const img = new Image();
+        if (fileInput.files.length > 0) {
+            img.src = URL.createObjectURL(fileInput.files[0]);
+        }
+        img.onload = () => {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+
+            const detections = apiData.detections || [];
+            detections.forEach(det => {
+                const [x, y, x2, y2] = det.box;
+                const w = x2 - x;
+                const h = y2 - y;
+
+                const label = det.label;
+                const conf = (det.confidence * 100).toFixed(1) + "%";
+                const displayString = `${label} [${conf}]`;
+
+                // Color based on class
+                let color = '#66fcf1';
+                if (det.class === 'debris') color = '#ff4757';
+                else if (det.class === 'satellite') color = '#ffa502';
+
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, y, w, h);
+
+                ctx.font = 'bold 12px Consolas';
+                const textWidth = ctx.measureText(displayString).width;
+                ctx.fillStyle = 'rgba(10, 10, 18, 0.85)';
+                ctx.fillRect(x, y - 20, textWidth + 10, 20);
+                ctx.fillStyle = color;
+                ctx.fillText(displayString, x + 5, y - 6);
+            });
+        };
+    }
+</script>
+</body>
+</html>
