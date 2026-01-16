@@ -2,14 +2,16 @@
 
 **Advanced Virtualized Enterprise Reconfigurable Architecture – Advanced Tracking and Location Analysis System**
 
-On-orbit debris detection and collision risk assessment system using SWIR imagery, AI-based detection, NASA-standard probability of collision (Pc) calculations, and automated maneuver decision support.
+On-orbit debris detection and collision risk assessment system using SWIR imagery, AI-based detection, multi-sensor fusion, Initial Orbit Determination (IOD), NASA-standard probability of collision (Pc) calculations, and automated maneuver decision support.
 
 ## Overview
 
-AVERA-ATLAS is a microservices-based system designed for edge deployment on spacecraft (NVIDIA Jetson) or ground-based operations. It processes sensor imagery to detect orbital debris, propagates trajectories, computes collision probability, and provides GO/NO-GO maneuver recommendations based on the decision framework described in Kevin Sampson's "Thoughts on MMOD Risk & Propulsion System Sizing."
+AVERA-ATLAS is a microservices-based system designed for edge deployment on spacecraft (NVIDIA Jetson) or ground-based operations. It processes sensor imagery to detect orbital debris, correlates detections across multiple sensors, performs Initial Orbit Determination, propagates trajectories, computes collision probability, and provides GO/NO-GO maneuver recommendations based on the decision framework described in Kevin Sampson's "Thoughts on MMOD Risk & Propulsion System Sizing."
 
 **Key Capabilities:**
 - Real-time debris detection from SWIR imagery using YOLO/ONNX inference
+- Multi-sensor detection correlation and track management
+- Initial Orbit Determination (IOD) using Gauss and Herrick-Gibbs methods
 - Keplerian orbit propagation for trajectory prediction
 - NASA-standard Pc calculation with Frisbee max-Pc for missing covariance cases
 - Risk-tiered alerting (RED/AMBER/GREEN) based on industry thresholds
@@ -17,45 +19,51 @@ AVERA-ATLAS is a microservices-based system designed for edge deployment on spac
 - Propulsion system recommendations (Option A high-thrust vs Option B high-efficiency)
 - 3D visualization with Pc overlay and decision status
 - Enhanced operator dashboard with real-time decision support
+- Demo mode for autonomous operation and investor presentations
 
 ## Architecture
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────────────┐     ┌─────────────┐
-│   Detector  │────▶│   Ingest    │────▶│    Propagator +     │────▶│     Viz     │
-│  (YOLO/ONNX)│     │  (FastAPI)  │     │  Decision Engine    │     │ (Matplotlib)│
-└─────────────┘     └─────────────┘     └─────────────────────┘     └─────────────┘
-     :8000              :8000                                              │
-                            │                                              │
-                            ▼                                              ▼
-                    states_multi.npz ──────────────────────▶     prop_multi.npz
-                                                                      │
-                                                                      ▼
-                                                              planner_output.mp4
-                                                                      │
-                                                                      ▼
-                                                              ┌─────────────┐
-                                                              │ Enhanced UI │
-                                                              │  Dashboard  │
-                                                              └─────────────┘
-                                                                   :8080
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│  Detector   │─────▶│   Tracker   │─────▶│ Propagator  │
+│ (YOLO/ONNX) │      │ (IOD/Fusion)│      │  (Kepler)   │
+└─────────────┘      └─────────────┘      └─────────────┘
+     :8000                :8000                  │
+                                                 │
+                                                 ▼
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│     UI      │◀─────│     Viz     │◀─────│  Artifacts  │
+│ (Dashboard) │      │ (Matplotlib)│      │   (.npz)    │
+└─────────────┘      └─────────────┘      └─────────────┘
+     :8080
+
+Data Flow:
+  detections ──▶ states_multi.npz ──▶ prop_multi.npz ──▶ planner_output.mp4
 ```
+
+**Analytical Planning Stack (APS) Pipeline:**
+1. **Detection** - SWIR imagery processed by YOLO model to identify debris/satellites
+2. **Tracking** - Multi-sensor correlation, UCT management, Initial Orbit Determination
+3. **Propagation** - Keplerian orbit propagation with conjunction screening
+4. **Assessment** - NASA-standard Pc calculation, risk classification
+5. **Decision** - GO/NO-GO recommendation with propulsion options
+6. **Visualization** - 3D trajectory rendering and operator dashboard
 
 **Services:**
 
 | Service | Port | Description |
 |---------|------|-------------|
 | detector | 8000 | SWIR image processing, YOLO inference |
-| ingest | 8000 | Buffers detections, writes state vectors |
-| propagator | - | Keplerian propagation, conjunction screening, Pc calculation, decision engine |
+| tracker | 8000 | Multi-sensor fusion, correlation, IOD, track management |
+| propagator | - | Keplerian propagation, conjunction screening, Pc calculation |
 | viz | - | 3D trajectory rendering with risk coloring |
-| ui | 8080 | Web dashboard with decision support display |
+| ui | 8080 | Web dashboard with decision support and demo mode |
 
 ## Quick Start
 
 ```bash
 # Clone and enter directory
-cd avera-atlas
+cd avera-atlas-v5
 
 # Build all services
 docker-compose build
@@ -66,16 +74,34 @@ docker-compose up
 
 Access the UI at http://localhost:8080
 
+### Demo Mode
+
+For demonstrations without real sensor data:
+1. Open the UI at http://localhost:8080
+2. Click **"▶ START DEMO MODE"** in the SWIR Data Ingest panel
+3. The system will automatically generate synthetic detections every 15 seconds
+4. Watch the Tracker Pipeline portlet show detection → correlation → IOD → track flow
+5. Conjunction assessments and trajectory visualizations update automatically
+
 ## Project Structure
 
 ```
-avera-atlas/
+avera-atlas-v5/
 ├── docker-compose.yaml              # Orchestrates all services
 ├── README.md                        # This file
 ├── swir-detector/                   # Debris detection service
 │   ├── main.py                      # FastAPI + ONNX inference
 │   ├── detector_yolo.py             # YOLO detection module
-│   ├── debris_model.onnx            # YOLO model weights
+│   └── Dockerfile
+├── tracker-service/                 # Multi-sensor fusion & IOD
+│   ├── main.py                      # FastAPI tracker endpoints
+│   ├── correlate.py                 # Detection correlation engine
+│   ├── iod.py                       # Initial Orbit Determination
+│   ├── transform.py                 # Sensor-to-inertial transforms
+│   ├── mock_platform.py             # Simulated platform states
+│   ├── models.py                    # Data models
+│   ├── schemas.py                   # API schemas
+│   ├── README.md                    # Tracker-specific documentation
 │   └── Dockerfile
 ├── planner-stack/                   # Core analysis pipeline
 │   ├── ingest/
@@ -92,11 +118,32 @@ avera-atlas/
 │   └── Dockerfile.viz
 ├── ui/                              # Operator dashboard
 │   └── app/
-│       ├── main.py                  # FastAPI with decision endpoints
+│       ├── main.py                  # FastAPI with decision & demo endpoints
 │       └── templates/
-│           └── index.html           # Dashboard with decision display
+│           └── index.html           # Dashboard with tracker status
 └── k8s/                             # Kubernetes manifests
 ```
+
+## Tracker Service
+
+The tracker service bridges detection and propagation, solving the critical problem of converting pixel-level detections into orbital state vectors.
+
+### Pipeline Steps
+
+1. **Detection Ingestion** - Receives detections from SWIR detector
+2. **Platform State Retrieval** - Gets observer satellite position/attitude
+3. **Sensor-to-Inertial Transform** - Converts pixel coordinates to RA/Dec angles
+4. **Detection Correlation** - Associates detections into Uncorrelated Track (UCT) buffers
+5. **Initial Orbit Determination** - Computes orbital elements from angular observations
+6. **Track Export** - Outputs state vectors in propagator-compatible format
+
+### IOD Methods
+
+- **Gauss Method** - Classical angles-only IOD for 3 observations
+- **Herrick-Gibbs** - Velocity estimation from closely-spaced observations
+- Automatic method selection based on observation geometry
+
+See `tracker-service/README.md` for detailed tracker documentation.
 
 ## Decision Framework
 
@@ -125,15 +172,11 @@ For maneuvers with **< 30 minutes** to TCA:
 - Monopropellant (100-5000 mN, Isp: 200-250s)
 - High-Power Hall Thrusters (50-500 mN, Isp: 1200-2000s)
 
-**Characteristics:** Fast response, higher fuel consumption, suitable for emergency scenarios.
-
 #### Option B: High Efficiency (Early Action)
 For maneuvers with **> 60 minutes** to TCA:
 - Electrospray/Colloid (0.01-1 mN, Isp: 500-2500s)
 - FEEP (0.001-0.5 mN, Isp: 4000-10000s)
 - Miniature Ion Engines (0.1-5 mN, Isp: 2000-4000s)
-
-**Characteristics:** Lower thrust, excellent fuel efficiency, suitable for planned maneuvers.
 
 ## Collision Probability Calculation
 
@@ -141,13 +184,9 @@ The propagator service implements NASA-standard conjunction assessment using the
 
 ### Pc Methods
 
-**Standard 2D Pc (`pc_circle`)**: Integrates collision probability over a circular hard-body region on the conjunction plane. Supports multiple estimation modes:
-- Mode 64 (default): 64th-order Gauss-Chebyshev quadrature
-- Mode 0: Equal-area square approximation (fast)
-- Mode -1: Circumscribing square upper bound
-- Mode 1: Full numerical integration (scipy.integrate.quad)
+**Standard 2D Pc (`pc_circle`)**: Integrates collision probability over a circular hard-body region on the conjunction plane.
 
-**Frisbee Max-Pc**: When covariance data is unavailable for one object (common for newly detected debris), computes a conservative upper-bound Pc. This ensures safety-critical decisions aren't undermined by missing data.
+**Frisbee Max-Pc**: When covariance data is unavailable for one object (common for newly detected debris), computes a conservative upper-bound Pc.
 
 ### Risk Thresholds
 
@@ -158,179 +197,103 @@ The propagator service implements NASA-standard conjunction assessment using the
 | 🟢 GREEN | ≥ 1e-7 | Monitor |
 | NOMINAL | < 1e-7 | No action required |
 
-These thresholds align with NASA Conjunction Assessment Risk Analysis (CARA) standards.
+## UI Dashboard
 
-### Covariance Handling
+The operator dashboard includes:
 
-The system generates assumed covariances when tracking data is unavailable:
+1. **SWIR Data Ingest** - Manual image upload or Demo Mode activation
+2. **Tracking Summary** - Total objects tracked, RED/AMBER alert counts
+3. **Tracker Pipeline** - Real-time view of detection processing stages, UCT buffers, confirmed tracks
+4. **Optical Feed** - Detection visualization with bounding boxes
+5. **Active Conjunctions** - Object ID, miss distance, Pc, time to TCA, risk level
+6. **Maneuver Decision Panel** - GO/STANDBY/NO GO status with action recommendations
+7. **Propulsion Recommendation** - Thruster options with delta-V estimates
+8. **GO/NO-GO Reference Matrix** - Quick reference for decision criteria
+9. **Trajectory Visualization** - 3D animation and conjunction summary chart
 
-**Detection-based covariance**: Scales with range and inverse detection confidence. Objects detected with low confidence get larger (more conservative) uncertainty ellipsoids.
+## API Reference
 
-**SGP4 propagation covariance**: Models TLE accuracy degradation over time (approximately 1 km base + 1.5 km/day growth in the along-track direction).
+### UI Service (port 8080)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/conjunction-status` | GET | Current conjunction assessment with decisions |
+| `/api/tracker-status` | GET | Tracker pipeline status, UCTs, tracks |
+| `/api/demo/start` | POST | Start demo mode |
+| `/api/demo/stop` | POST | Stop demo mode |
+| `/api/process` | POST | Process uploaded SWIR image |
+
+### Tracker Service (port 8000)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/status` | GET | Service health and statistics |
+| `/detections` | POST | Submit new detection |
+| `/tracks` | GET | List all confirmed tracks |
+| `/uncorrelated` | GET | List UCT buffers |
+| `/export/states` | POST | Export tracks for propagator |
+| `/demo/generate` | POST | Generate synthetic detections |
+
+### Detector Service (port 8000)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/predict` | POST | Submit SWIR image for detection |
+| `/health` | GET | Service health check |
 
 ## Data Artifacts
 
-### Input: `states_multi.npz`
-
-Written by the ingest service with detected object states:
+### `states_multi.npz` (Tracker → Propagator)
 
 ```python
 {
-    'object_ids': ['DEB_001', 'DEB_002', ...],  # Object identifiers
-    'r_eci_km': [[x, y, z], ...],               # Position vectors (km)
-    'v_eci_km_s': [[vx, vy, vz], ...],          # Velocity vectors (km/s)
-    't_window': [dt_sec, n_steps],              # Propagation window
-    'metadata': '{"t0": "2024-01-15T12:00:00Z"}',
-    'confidences': [0.95, 0.82, ...]            # Detection confidences (optional)
+    'object_ids': ['Debris_001', 'CubeSat_001', ...],
+    'r_eci_km': [[x, y, z], ...],        # Position vectors (km)
+    'v_eci_km_s': [[vx, vy, vz], ...],   # Velocity vectors (km/s)
+    'confidences': [0.85, 0.92, ...],    # Track confidence
+    't_window': [60.0, 1440],            # [dt_sec, n_steps]
+    'metadata': '{"source": "tracker", "t0": "...", "track_count": N}'
 }
 ```
 
-### Output: `prop_multi.npz`
-
-Written by the propagator with trajectories, risk assessment, and decisions:
+### `prop_multi.npz` (Propagator → Viz/UI)
 
 ```python
 {
     # Trajectories
-    't_array': [...],                     # Julian dates
-    'r_asset': [[x, y, z], ...],          # Asset trajectory (km)
-    'r_objects': [[[x, y, z], ...], ...], # Debris trajectories (km)
-    'obj_ids': ['DEB_001', ...],
+    'r_asset': [[x, y, z], ...],
+    'r_objects': [[[x, y, z], ...], ...],
     
     # Conjunction Assessment
-    'ca_table': [12.5, 45.2, ...],        # Miss distances at TCA (km)
-    'pc_values': [3.2e-6, 1.1e-8, ...],   # Probability of collision
-    'risk_levels': ['AMBER', 'NOMINAL', ...],
-    'tca_indices': [142, 89, ...],        # Time index of closest approach
-    'relative_velocities': [14.2, 12.8, ...],  # Relative velocity at TCA (km/s)
+    'ca_table': [12.5, ...],             # Miss distances (km)
+    'pc_values': [3.2e-6, ...],          # Probability of collision
+    'risk_levels': ['AMBER', ...],
     
-    # Decision Outputs
-    'decisions': ['GO', 'STANDBY', 'NO_GO', ...],
-    'decision_urgencies': ['CRITICAL', 'HIGH', 'LOW', ...],
-    'propulsion_options': ['A', 'B', 'N/A', ...],
-    'delta_v_estimates': [0.125, 0.0, 0.0, ...],  # m/s
-    
-    # Summary
-    'screening_params': '{"hbr_m": 15.0, ...}',
-    'n_red_alerts': 1,
-    'n_amber_alerts': 2,
-    'n_go_decisions': 1,
-    'n_standby_decisions': 2
+    # Decisions
+    'decisions': ['GO', 'STANDBY', ...],
+    'propulsion_options': ['A', 'B', ...]
 }
 ```
 
 ## Configuration
 
-Key parameters in `propagator_kepler.py`:
+Key environment variables:
 
-```python
-HBR_M = 15.0                    # Combined hard body radius (meters)
-SCREENING_THRESHOLD_KM = 100.0  # Only compute Pc if miss < threshold
-PC_RED_THRESHOLD = 1e-4         # Emergency alert threshold
-PC_AMBER_THRESHOLD = 1e-5       # Watch alert threshold
-```
-
-## UI Dashboard
-
-The operator dashboard includes:
-
-1. **Tracking Summary** - Total objects tracked, RED/AMBER alert counts, closest approach distance, maximum Pc value
-2. **Maneuver Decision Panel** - Current decision status (GO/STANDBY/NO GO), target object identification, time to TCA countdown, action recommendations
-3. **Propulsion Recommendation** - Recommended option (A/B), suitable thruster list with specifications, estimated delta-V requirement
-4. **Active Conjunctions Table** - Object ID, miss distance, probability of collision, time to TCA, risk level
-5. **GO/NO-GO Reference Matrix** - Quick reference for decision criteria
-
-## API Reference
-
-### GET `/api/conjunction-status`
-
-Returns current conjunction assessment with decision data.
-
-```json
-{
-  "status": "active",
-  "timestamp": "2024-01-15T12:00:00Z",
-  "summary": {
-    "total_tracked": 5,
-    "red_alerts": 1,
-    "amber_alerts": 2,
-    "highest_pc": 2.5e-4,
-    "closest_approach_km": 0.015
-  },
-  "primary_recommendation": {
-    "object": "DEB_001",
-    "decision": "GO",
-    "urgency": "CRITICAL",
-    "action": "EXECUTE COLLISION AVOIDANCE",
-    "time_remaining": "25.3 min",
-    "propulsion_option": "A"
-  },
-  "conjunctions": [...]
-}
-```
-
-### GET `/api/decision-matrix`
-
-Returns the GO/NO-GO decision matrix configuration.
-
-### POST `/predict` (Detector Service)
-
-Submit SWIR image for debris detection.
-
-```bash
-curl -X POST http://localhost:8000/predict \
-  -F "image=@swir_frame.png"
-```
-
-Response:
-```json
-{
-  "frame_id": "frame_001",
-  "timestamp_utc": "2024-01-15T12:00:00Z",
-  "detections": [
-    {
-      "class": "debris",
-      "confidence": 0.95,
-      "bbox": [120, 340, 180, 400],
-      "estimated_range_km": 50.2
-    }
-  ]
-}
-```
-
-## Local Development
-
-To run services locally without Docker:
-
-```bash
-# Create shared data directory
-mkdir -p /tmp/avera_data
-
-# Set environment variable
-export DATA_DIR=/tmp/avera_data
-
-# Run propagator
-cd planner-stack/propagate
-pip install -r requirements.txt
-python propagator_kepler.py
-```
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATA_DIR` | `/data/planner_artifacts` | Shared artifact storage |
+| `SWIR_SERVICE_URL` | `http://detector:8000/predict` | Detector endpoint |
+| `TRACKER_SERVICE_URL` | `http://tracker:8000` | Tracker endpoint |
+| `LOG_LEVEL` | `INFO` | Logging verbosity |
 
 ## Kubernetes Deployment
 
-For production deployment on K3s or GKE:
-
 ```bash
-# Apply namespace
 kubectl apply -f k8s/00-namespace.yaml
-
-# Deploy services
 kubectl apply -f k8s/01-detector.yaml
 kubectl apply -f k8s/02-planner.yaml
 kubectl apply -f k8s/03-viz.yaml
 kubectl apply -f k8s/04-ui.yaml
-
-# Check status
-kubectl get pods -n avera-atlas
 ```
 
 ## References
@@ -338,16 +301,15 @@ kubectl get pods -n avera-atlas
 - Sampson, K. "Thoughts on MMOD Risk & Propulsion System Sizing"
 - Alfano, S. (2005). "A Numerical Implementation of Spherical Object Collision Probability"
 - NASA Conjunction Assessment Risk Analysis (CARA) Operations
-- Frisbee, R. "Probability of Collision for Close Approaches"
-- Garrett Reisman's USC Course: Engineering Principles for Human Spaceflight
+- Vallado, D. "Fundamentals of Astrodynamics and Applications" (IOD methods)
 
-## Future Enhancements
+## Version History
 
-1. **Automated Maneuver Planning** - Generate optimal burn profiles
-2. **Monte Carlo Analysis** - Uncertainty propagation for decision confidence
-3. **Historical Trend Analysis** - Pc evolution over time
-4. **Multi-Object Coordination** - Prioritized maneuver sequencing
-5. **Ground Integration** - Mission Control notification system
+- **v5** - Added tracker service with multi-sensor fusion, IOD, demo mode
+- **v4** - Enhanced UI dashboard with decision support
+- **v3** - Integrated NASA-standard Pc calculations
+- **v2** - Added Keplerian propagation
+- **v1** - Initial SWIR detection pipeline
 
 ## License
 
